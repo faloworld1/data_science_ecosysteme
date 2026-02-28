@@ -652,7 +652,7 @@ Pour des questions ou problèmes:
 
 ## 📄 Licence et Attribution
 
-Ce projet est développé pour usage éducatif dans le cadre du cursus Data Science.
+Ce projet est développé pour usage éducatif dans le cadre du cursus bidabi.
 
 Basé sur les standards:
 - **FHIR**: HL7 Fast Healthcare Interoperability Resources
@@ -661,6 +661,6 @@ Basé sur les standards:
 
 ---
 
-**Version**: 1.0.0  
-**Dernière mise à jour**: 2024  
-**Auteur**: Health Data Science Team
+
+**Dernière mise à jour**: 2026  
+**Auteur**: Ibrahima Fa LO
