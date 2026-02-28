@@ -1,0 +1,94 @@
+services:
+  # Zookeeper (required for Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - bp-monitoring-network
+
+  # Kafka Broker
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - bp-monitoring-network
+    healthcheck:
+      test: kafka-broker-api-versions --bootstrap-server localhost:9092
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - bp-monitoring-network
+    healthcheck:
+      test: curl -s http://localhost:9200 >/dev/null || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # Kibana for visualization
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    networks:
+      - bp-monitoring-network
+    healthcheck:
+      test: curl -s http://localhost:5601/api/status >/dev/null || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # Kafka UI (optional, for monitoring Kafka topics)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - bp-monitoring-network
+
+volumes:
+  elasticsearch_data:
+    driver: local
+
+networks:
+  bp-monitoring-network:
+    driver: bridge
